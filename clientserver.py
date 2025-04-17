@@ -17,25 +17,24 @@ def get_public_ip():
 
 # Envoi de l'adresse IP publique + port au serveur
 def send_ip_to_server(my_uid):
-    ip = get_public_ip()
-    if not ip:
-        print("❌ Impossible d'obtenir l'IP publique.")
-        return
-
-    data = {
-        "value1": int(my_uid),  # UID doit être un entier
-        "value2": str(ip),  # L'adresse IP doit être une chaîne
-        "value3": PORT  # Port reste un entier
-    }
-
+    last_ip = None
     while True:
-        try:
-            print("📤 Data envoyée :", data)
-            response = requests.post(f"{SERVER_URL}/submit", json=data)
-            print(f"✅ Réponse du serveur : {response.text}")
-        except Exception as e:
-            print(f"❌ Erreur d'envoi : {e}")
-        time.sleep(1)
+        ip = get_public_ip()
+        if ip != last_ip:
+            last_ip = ip
+            data = {
+                "value1": int(my_uid),
+                "value2": str(ip),
+                "value3": PORT
+            }
+            try:
+                print("📤 Data envoyée :", data)
+                response = requests.post(f"{SERVER_URL}/submit", json=data)
+                print(f"✅ Réponse du serveur : {response.text}")
+            except Exception as e:
+                print(f"❌ Erreur d'envoi : {e}")
+        time.sleep(5)  # Vérifier toutes les 5 secondes
+
 
 
 # Reçoit les messages via socket
