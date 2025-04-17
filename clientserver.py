@@ -23,9 +23,9 @@ def send_ip_to_server(my_uid):
         return
 
     data = {
-        "value1": str(my_uid),
-        "value2": str(ip),
-        "value3": int(PORT)
+        "value1": int(my_uid),  # UID doit être un entier
+        "value2": str(ip),  # L'adresse IP doit être une chaîne
+        "value3": PORT  # Port reste un entier
     }
 
     while True:
@@ -36,6 +36,7 @@ def send_ip_to_server(my_uid):
         except Exception as e:
             print(f"❌ Erreur d'envoi : {e}")
         time.sleep(1)
+
 
 # Reçoit les messages via socket
 def receive_messages(sock):
@@ -51,8 +52,13 @@ def receive_messages(sock):
 
 # Tente de se connecter à l'utilisateur distant
 def connect_to_peer(ip_and_port):
-    ip, port = ip_and_port.split(":")
-    port = int(port)
+    try:
+        ip, port = ip_and_port.split(":")
+        port = int(port)
+    except ValueError:
+        print(f"❌ Format d'IP ou de port incorrect : {ip_and_port}")
+        return
+    
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         try:
             s.connect((ip, port))
@@ -64,19 +70,23 @@ def connect_to_peer(ip_and_port):
         except Exception as e:
             print(f"❌ Erreur de connexion : {e}")
 
+
 # Vérifie toutes les 5 sec si l'utilisateur distant est présent
 def wait_for_peer(remote_uid):
     print(f"⏳ En attente de l'utilisateur UID {remote_uid}...")
     while True:
         try:
             response = requests.post(f"{SERVER_URL}/getin", json={"value1": str(remote_uid)})
-            if response.text != "False":
-                print(f"👤 Utilisateur trouvé ! IP/Port = {response.text}")
-                connect_to_peer(response.text)
+            response_json = response.json()  # Décoder la réponse en JSON
+            if "message" in response_json and response_json["message"] != "Utilisateur non trouvé":
+                ip_port = response_json["message"]
+                print(f"👤 Utilisateur trouvé ! IP/Port = {ip_port}")
+                connect_to_peer(ip_port)
                 break
         except Exception as e:
             print(f"❌ Erreur serveur : {e}")
         time.sleep(5)
+
 
 # Écoute les connexions entrantes pour recevoir des messages
 def listen_for_incoming():
@@ -110,4 +120,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
