@@ -3,7 +3,7 @@ import requests
 import time
 import threading
 
-SERVER_URL = "https://flaskserver-1-mtrp.onrender.com/"
+SERVER_URL = "https://flaskserver-1-mtrp.onrender.com"
 PORT = 5001  # Port fixe utilisé pour la connexion socket
 
 # Récupérer l'IP publique via une API
@@ -12,29 +12,30 @@ def get_public_ip():
         response = requests.get("https://api.ipify.org?format=json")
         return response.json()['ip']
     except Exception as e:
-        print(f"Erreur IP publique : {e}")
+        print(f"❌ Erreur IP publique : {e}")
         return None
 
-# Envoi de l'adresse IP publique + port au serveur
 # Envoi de l'adresse IP publique + port au serveur
 def send_ip_to_server(my_uid):
     ip = get_public_ip()
     if not ip:
-        print("Impossible d'obtenir l'IP publique.")
+        print("❌ Impossible d'obtenir l'IP publique.")
         return
+
     data = {
-        "value1": int(my_uid),
-        "value2": ip,
-        "value3": int(PORT)  # <--- Assure-toi qu'il est bien un entier
+        "value1": str(my_uid),
+        "value2": str(ip),
+        "value3": int(PORT)
     }
+
     while True:
         try:
+            print("📤 Data envoyée :", data)
             response = requests.post(f"{SERVER_URL}/submit", json=data)
-            print(f"IP envoyée au serveur : {response.text}")
+            print(f"✅ Réponse du serveur : {response.text}")
         except Exception as e:
-            print(f"Erreur d'envoi : {e}")
+            print(f"❌ Erreur d'envoi : {e}")
         time.sleep(1)
-
 
 # Reçoit les messages via socket
 def receive_messages(sock):
@@ -42,7 +43,7 @@ def receive_messages(sock):
         try:
             msg = sock.recv(1024)
             if msg:
-                print(f"\nMessage reçu : {msg.decode('utf-8')}")
+                print(f"\n📨 Message reçu : {msg.decode('utf-8')}")
             else:
                 break
         except:
@@ -61,20 +62,20 @@ def connect_to_peer(ip_and_port):
                 msg = input("Vous : ")
                 s.sendall(msg.encode())
         except Exception as e:
-            print(f"Erreur de connexion : {e}")
+            print(f"❌ Erreur de connexion : {e}")
 
 # Vérifie toutes les 5 sec si l'utilisateur distant est présent
 def wait_for_peer(remote_uid):
     print(f"⏳ En attente de l'utilisateur UID {remote_uid}...")
     while True:
         try:
-            response = requests.post(f"{SERVER_URL}/getin", json={"value1": remote_uid})
+            response = requests.post(f"{SERVER_URL}/getin", json={"value1": str(remote_uid)})
             if response.text != "False":
                 print(f"👤 Utilisateur trouvé ! IP/Port = {response.text}")
                 connect_to_peer(response.text)
                 break
         except Exception as e:
-            print(f"Erreur serveur : {e}")
+            print(f"❌ Erreur serveur : {e}")
         time.sleep(5)
 
 # Écoute les connexions entrantes pour recevoir des messages
@@ -109,3 +110,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
